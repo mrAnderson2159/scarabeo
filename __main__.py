@@ -1,6 +1,6 @@
+import builtins
 import os
 from typing import Optional
-from xml.dom import NotFoundErr
 from tabulate import tabulate
 
 
@@ -8,8 +8,17 @@ def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
+def input(prompt = ''):
+    return builtins.input(prompt).strip()
+
+
+
 class CommandException(Exception):
     """Class for exceptions raised by commands"""
+
+
+class NotFoundErr(Exception):
+    """Class for exceptions raised by search"""
 
 
 class Player:
@@ -65,6 +74,7 @@ class Game:
         return [word for sublist in lists for word in sublist]
 
     def __init__(self):
+        self.chrono = dict()
         self.show_chrono = False
 
         self.play()
@@ -75,6 +85,7 @@ class Game:
 
         players_names = self.get_players_names(players)
         players_list = Player.from_names(players_names)
+        self.chrono = {player.name: [] for player in players_list}
 
         while True:
             self.sign_points(players_list)
@@ -88,6 +99,7 @@ class Game:
             if players:
                 return players
             print(f"\tL'input non è corretto\n")
+            input()
 
     def get_players_names(self, players: int) -> list[str]:
         confirm_names = False  # Inserimento nomi giocatori
@@ -105,6 +117,7 @@ class Game:
                         break
                     except Exception as e:
                         print(f"\t{e}")
+                        input()
                     print()
             confirm_names = self.confirm(f'I nomi dei giocatori sono {", ".join(player_list)}, va bene così?')
 
@@ -112,29 +125,49 @@ class Game:
 
     def sign_points(self, players: list[Player]):
         self.clear()
+        if self.show_chrono:
+            self.print_chrono()
         Player.print(players)
 
         command = input('> ')
 
         self.check_exit(command)
 
-        if self.toggle(command, players):
+        if self.toggle(command):
             return
 
         addiction = self.validate_addiction(command)
 
-        if command:
+        if addiction:
             name, number = addiction
 
             try:
                 player = Player.search(name, players)
+                self.update_chrono(player, number)
             except NotFoundErr as e:
                 print(e)
+                input()
                 return
 
             player.add(number)
         else:
-            print(f'"{command}" non Ã¨ un comando valido')
+            print(f'\t"{command}" non è un comando valido')
+            input()
+
+    def print_chrono(self):
+        print("\nCronologia Punti:")
+        max_turns = max(len(points) for points in self.chrono.values())
+        headers = [i+1 for i in range(max_turns)]
+        rows = [[self.chrono[player][i] if i < len(self.chrono[player]) else '' for player in self.chrono] for i in range(max_turns)]
+        table = [[i+1] + row for i, row in enumerate(rows)]
+        print(tabulate(table, headers=["Turni"] + list(self.chrono.keys()), tablefmt="fancy_grid"))
+
+
+    def update_chrono(self, player: Player, number: int):
+        if number > 0:
+            self.chrono[player.name].append(number)
+        elif number < 0:
+            self.chrono[player.name][-1] += number
 
     @staticmethod
     def validate_int(value) -> Optional[int]:
@@ -176,18 +209,22 @@ class Game:
 
     def toggle(self, command: str) -> bool:
         try:
-            command, prop = command.split(' ')
+            cmd, prop = command.split(' ', 1)
 
-            if command in self.toggle_words:
+            if cmd in self.toggle_words:
                 if prop in self.chrono_words:
-                    self.show_chrono = command == self.toggle_words[0]
+                    self.show_chrono = cmd == self.toggle_words[0]  # True se "mostra", False se "nascondi"
+                    print(f"Cronologia {'attivata' if self.show_chrono else 'disattivata'}")
+                    return True
                 else:
                     raise CommandException(f'"{prop}" non è un comando valido')
-                return True
             return False
-
         except ValueError:
             return False
+        except CommandException as e:
+            print(f"\t{e}")
+            input()
+            return True
 
 
 if __name__ == '__main__':
