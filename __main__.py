@@ -96,9 +96,13 @@ class Game:
             players = input('Inserire il numero di giocatori: ')
             self.check_exit(players)
             players = self.validate_int(players)
-            if players:
+
+            if players is not None and players > 1:
                 return players
-            print(f"\tL'input non è corretto\n")
+            elif players is not None:
+                print(f"\tDevono esserci almeno 2 giocatori\n")
+            else:
+                print(f"\tL'input non è corretto\n")
             input()
 
     def get_players_names(self, players: int) -> list[str]:
@@ -127,6 +131,8 @@ class Game:
         self.clear()
         if self.show_chrono:
             self.print_chrono()
+
+        print('Punti')
         Player.print(players)
 
         command = input('> ')
@@ -155,12 +161,12 @@ class Game:
             input()
 
     def print_chrono(self):
-        print("\nCronologia Punti:")
+        print("\nCronologia Punti")
         max_turns = max(len(points) for points in self.chrono.values())
-        headers = [i+1 for i in range(max_turns)]
         rows = [[self.chrono[player][i] if i < len(self.chrono[player]) else '' for player in self.chrono] for i in range(max_turns)]
         table = [[i+1] + row for i, row in enumerate(rows)]
         print(tabulate(table, headers=["Turni"] + list(self.chrono.keys()), tablefmt="fancy_grid"))
+        print()
 
 
     def update_chrono(self, player: Player, number: int):
@@ -214,7 +220,8 @@ class Game:
             if cmd in self.toggle_words:
                 if prop in self.chrono_words:
                     self.show_chrono = cmd == self.toggle_words[0]  # True se "mostra", False se "nascondi"
-                    print(f"Cronologia {'attivata' if self.show_chrono else 'disattivata'}")
+                    print(f"\t{'Attivo' if self.show_chrono else 'Disattivo'} la cronologia...", end=' ')
+                    input()
                     return True
                 else:
                     raise CommandException(f'"{prop}" non è un comando valido')
