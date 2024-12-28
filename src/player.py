@@ -1,10 +1,12 @@
 from tabulate import tabulate
 
+import src.models as models
 from src.exceptions import NotFoundErr
 
 
 class Player:
-    def __init__(self, name):
+    def __init__(self, id, name):
+        self.id = id
         self.name = name
         self.point = 0
 
@@ -13,7 +15,20 @@ class Player:
 
     @classmethod
     def from_names(cls, names: list[str]) -> list['Player']:
-        return [cls(name) for name in names]
+        # return [cls(name) for name in names]
+        players = []
+        for name in names:
+            try:
+                player = models.Player.get_by_name(name)
+            except NotFoundErr:
+                player = models.Player.create(name)
+
+            players.append(cls(player.id, player.name))
+
+        ids = models.Player.get_ids(players)
+        models.PlayerSet.create(ids)
+
+        return players
 
     def add(self, amount):
         if self.point + amount >= 0:

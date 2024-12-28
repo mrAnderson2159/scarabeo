@@ -1,7 +1,7 @@
 from typing import Optional
-
 from tabulate import tabulate
 
+import src.models as models
 from src.exceptions import NotFoundErr, CommandException
 from src.functions import input, clear
 from src.player import Player
@@ -28,7 +28,7 @@ class Game:
         print()
 
         players_names = self.get_players_names(players)
-        players_list = Player.from_names(players_names)
+        players_list = Player.from_names(players_names) # questa funzione crea i giocatori e un player_set, quindi li salva nel db
         self.chrono = {player.name: [] for player in players_list}
 
         while True:
